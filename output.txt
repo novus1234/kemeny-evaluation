@@ -1,0 +1,11 @@
+*** There are 3 candidates and 3 voters. ***
+
+Computing Kemeny consensus (brute force)...
+
+Best Kemeny score: 1
+Best ranking: Alice Bob Carol 
+
+Preference matrix:
+   0    1   -1 
+  -1    0    1 
+   1   -1    0 
