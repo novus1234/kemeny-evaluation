@@ -4,6 +4,8 @@
 #include <math.h>
 #include "ranksfile.h"
 
+void compute_copeland_approximation(RanksFile *rf, FILE *outfile);
+
 //----------------------------------------------------------
 // Helper function: get_candidate_index
 //----------------------------------------------------------
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
 
     // Read and process all input data
     read_ranks_file(INP, &rf, OUTP, showinput);
-    compute_kemeny_bruteforce(&rf, stdout); // call the new function
+    compute_copeland_approximation(&rf, stdout); 
 
     //--------------------------------------------------
     // Print the preference matrix for verification
