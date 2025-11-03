@@ -120,6 +120,8 @@ int main(int argc, char **argv) {
     compute_borda_heuristic(&rf, stdout);    // Borda count heuristic
     compute_copeland_approximation(&rf, stdout); // Copeland approximation
     compute_ranked_pairs(&rf, stdout);   // Ranked Pairs/Tiedmann approach 
+    compute_quicksort_approximation(&rf, stdout);
+
     //--------------------------------------------------
     // Print the preference matrix for verification
     //--------------------------------------------------
