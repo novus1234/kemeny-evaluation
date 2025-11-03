@@ -114,9 +114,12 @@ int main(int argc, char **argv) {
 
     // Read and process all input data
     read_ranks_file(INP, &rf, OUTP, showinput);
+
+    // Run all ranking methods
     compute_kemeny_bruteforce(&rf, stdout);  // Bruteforce approach
     compute_heuristic_kemeny(&rf, stdout);   // Local search heuristic
     compute_borda_heuristic(&rf, stdout);    // Borda count heuristic
+    compute_copeland_approximation(&rf, stdout); // Copeland approximation
 
     //--------------------------------------------------
     // Print the preference matrix for verification

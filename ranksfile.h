@@ -1,6 +1,8 @@
 #ifndef RANKSFILE_H
 #define RANKSFILE_H
 
+#include <stdio.h>
+
 // Define constants for array limits
 #define MAXVOTERS 3000        // Maximum number of voters (rankers)
 #define MAXCANDS 1000         // Maximum number of candidates
@@ -19,6 +21,11 @@ typedef struct {
 
 // Declaration of the brute-force Kemeny function
 void compute_kemeny_bruteforce(RanksFile *rf, FILE *out);
+
 void compute_heuristic_kemeny(RanksFile *rf, FILE *outfile);
+
+void compute_borda_heuristic(RanksFile *rf, FILE *outfile);
+
+void compute_copeland_approximation(RanksFile *rf, FILE *out);
 
 #endif

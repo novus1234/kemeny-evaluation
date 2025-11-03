@@ -7,6 +7,22 @@ Best ranking: Alice Bob Carol
 
 Heuristic Kemeny ranking (score = 1): Alice Bob Carol 
 
+Borda Count Heuristic Ranking:
+1. Alice (score = 1.00)
+2. Bob (score = 1.00)
+3. Carol (score = 1.00)
+
+=== COPELAND APPROXIMATION ===
+Copeland scores (wins + 0.5*ties):
+Alice: 1.0
+Bob: 1.0
+Carol: 1.0
+
+Final Copeland Ranking:
+1. Alice (score: 1.0)
+2. Bob (score: 1.0)
+3. Carol (score: 1.0)
+
 Preference matrix:
    0    1   -1 
   -1    0    1 

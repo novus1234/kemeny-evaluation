@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "RanksFile.h"
+#include "ranksfile.h"
 
 // Compute an approximate Kemeny consensus using the Borda Count heuristic
 void compute_borda_heuristic(RanksFile *rf, FILE *outfile) {
