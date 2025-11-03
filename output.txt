@@ -5,6 +5,8 @@ Computing Kemeny consensus (brute force)...
 Best Kemeny score: 1
 Best ranking: Alice Bob Carol 
 
+Heuristic Kemeny ranking (score = 1): Alice Bob Carol 
+
 Preference matrix:
    0    1   -1 
   -1    0    1 

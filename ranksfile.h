@@ -19,5 +19,6 @@ typedef struct {
 
 // Declaration of the brute-force Kemeny function
 void compute_kemeny_bruteforce(RanksFile *rf, FILE *out);
+void compute_heuristic_kemeny(RanksFile *rf, FILE *outfile);
 
 #endif

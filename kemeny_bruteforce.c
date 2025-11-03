@@ -76,3 +76,4 @@ void compute_kemeny_bruteforce(RanksFile *rf, FILE *out) {
     }
     fprintf(out, "\n");
 }
+
