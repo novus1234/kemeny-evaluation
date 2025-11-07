@@ -30,4 +30,6 @@ void compute_copeland_approximation(RanksFile *rf, FILE *out);
 
 void compute_ranked_pairs(RanksFile *rf, FILE *outfile);
 
+void compute_quicksort_approximation(RanksFile *rf, FILE *out);
+
 #endif
