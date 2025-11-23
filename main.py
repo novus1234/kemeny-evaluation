@@ -3,13 +3,15 @@ from algorithms import (
     kemeny_young_exact,
     borda,
     copeland,
-    quicksort_approx,
+    majority_sort,
     footrule_optimal,
     plackett_luce_mle,
     ranked_pairs,
     kemeny_local_search,
     schulze,
-    kemeny_parameterized_exact
+    kemeny_dp_by_candidates,
+    kwiksort_aggregation,
+    kemeny_bruteforce
 )
 from corankco.algorithms.kwiksort import KwikSortRandom
 from corankco.dataset import Dataset
@@ -62,16 +64,18 @@ if __name__ == "__main__":
 
     # ---------- EXACT KEMENY ----------
     objective, consensus, kendall_sum = kemeny_young_exact(rankings_fixed)
-    # score, parameterised_order = kemeny_parameterized_exact(rankings)
+    kemeny_dp_by_candidates_res = kemeny_dp_by_candidates(rankings)
+    bruteforce_res = kemeny_bruteforce(rankings)
 
     # ---------- CLASSICAL METHODS ----------
     borda_res = borda(rankings)
     copeland_res = copeland(rankings)
     footrule_res = footrule_optimal(rankings)
-    quicksort_res = quicksort_approx(rankings)
+    majority_sort_res = majority_sort(rankings)
     ranked_pairs_res = ranked_pairs(rankings)
     kemeny_local_search_res  = kemeny_local_search(rankings)
     schulze_res = schulze(rankings)
+    kwiksort_res = kwiksort_aggregation(rankings)
     try:
         pl_true_order, pl_true_params = plackett_luce_mle(rankings)
         pl_true_order = list(pl_true_order)
@@ -81,11 +85,13 @@ if __name__ == "__main__":
     # Collect all methods
     all_methods = [
         ("Kemeny (ILP exact)",     list(consensus)),
-        ("Parameterised exact",     list(consensus)),
+        ("Parameterised exact",     list(kemeny_dp_by_candidates_res[1])),
+        ("Bruteforce",     list(bruteforce_res)),
         ("Borda (classical)",      list(borda_res)),
+        ("Kwiksort",      list(kwiksort_res)),
         ("Copeland (classical)",   list(copeland_res)),
         ("Footrule (optimal)",     list(footrule_res)),
-        ("Quicksort (heuristic)",  list(quicksort_res)),
+        ("MajoritySort (heuristic)",  list(majority_sort_res)),
         ("Ranked pairs (heuristic)",  list(ranked_pairs_res)),
         ("Local Search (heuristic)",  list(kemeny_local_search_res[1])),
         ("schulze",  list(schulze_res)),

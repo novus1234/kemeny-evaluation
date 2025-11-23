@@ -6,6 +6,8 @@ from pulp import (
     LpProblem, LpVariable, LpBinary, lpSum, LpMinimize,
     value, LpStatusOptimal
 )
+from math import inf
+import random
 
 # ----------------------------------------------------------
 # 1. Kendall-tau distance
@@ -112,22 +114,44 @@ def copeland(ranks: np.ndarray) -> np.ndarray:
 # 8. Brute Force Kemeny (Ranky / Vlad Niculae)
 # ----------------------------------------------------------
 def kemeny_bruteforce(ranks):
-    n_cand = ranks.shape[1]
+    """
+    Brute-force exact Kemeny consensus.
+
+    Input:
+        ranks[v, c] = position of candidate c for voter v  (0 = best)
+    Output:
+        (best_perm, best_score)
+    """
+    n_voters, m = ranks.shape
+
+    # Precompute pairwise disagreement penalty:
+    # cost[a, b] = voters who prefer b > a
+    cost = np.zeros((m, m), dtype=int)
+    for a in range(m):
+        for b in range(m):
+            if a != b:
+                cost[a, b] = np.sum(ranks[:, a] > ranks[:, b])
+
+    best_score = float('inf')
     best_perm = None
-    best_score = 10**18
 
-    for perm in permutations(range(n_cand)):
-        inv = np.zeros(n_cand, dtype=int)
-        for pos, cand in enumerate(perm):
-            inv[cand] = pos
+    # Evaluate every permutation
+    for perm in permutations(range(m)):   # perm is candidate order
+        score = 0
 
-        score = sum(kendall_tau_distance(inv, voter) for voter in ranks)
+        # Score Kemeny objective: sum cost[a,b] for a before b
+        for i in range(m):
+            for j in range(i+1, m):
+                a = perm[i]
+                b = perm[j]
+                score += cost[a, b]
 
         if score < best_score:
             best_score = score
             best_perm = perm
 
-    return best_perm, best_score
+    return list(best_perm)
+
 
 # ----------------------------------------------------------
 # 9. Plackett-Luce (choix library)
@@ -143,12 +167,14 @@ def plackett_luce_mle(ranks):
                 comps.append((order[i], order[j]))
 
     params = choix.ilsr_pairwise(len(ranks[0]), comps, alpha=0.01)
+    if params is None:
+        return None, None   # MLE does not exist
+
     return np.argsort(-params), params
 
 # ----------------------------------------------------------
-# 6. Quicksort Heuristic (Dwork et al. 2001)
 # ----------------------------------------------------------
-def quicksort_approx(ranks):
+def majority_sort(ranks):
     n = ranks.shape[1]
 
     def majority_pref(a, b):
@@ -239,49 +265,51 @@ def has_cycle(graph, u, v, n):
     graph[u,v] = False  # revert
     return cycle
 
-def kemeny_local_search(ranks: np.ndarray,
-                        max_restarts: int = 20,
-                        max_iters_no_improve: int = 1000) -> tuple[int, np.ndarray]:
-    """
-    Repeated 2-opt local search for Kemeny-Young (excellent heuristic)
-    Often finds the exact optimum in practice.
-    """
-    n_voters, n_cand = ranks.shape
+def kemeny_local_search(ranks, max_restarts=20, max_iters_no_improve=2000):
+    n_voters, m = ranks.shape
 
-    def kemeny_score(order: np.ndarray) -> int:
-        """Fast Kemeny score for a given order (permutation of candidates)"""
+    # Precompute pairwise penalties P[a,b] = voters preferring b>a
+    P = np.zeros((m, m), dtype=int)
+    for a in range(m):
+        for b in range(m):
+            if a != b:
+                P[a, b] = np.sum(ranks[:, b] < ranks[:, a])
+
+    def score_from_order(order):
         score = 0
-        for i in range(n_cand):
-            for j in range(i+1, n_cand):
-                a, b = order[i], order[j]
-                # Number of voters who disagree with a > b
-                score += np.sum(ranks[:,a] > ranks[:,b])
+        for i in range(m):
+            for j in range(i+1, m):
+                score += P[order[i], order[j]]
         return score
 
     best_score = float('inf')
     best_order = None
 
-    for restart in range(max_restarts):
-        # Start from a good initial ranking (Borda is excellent)
-        initial_scores = np.sum(ranks, axis=0)
-        current_order = np.argsort(initial_scores)
-        current_score = kemeny_score(current_order)
+    for r in range(max_restarts):
+        # Borda start
+        initial = np.sum(ranks, axis=0)
+        order = np.argsort(initial)
+        current_score = score_from_order(order)
 
         iters_no_improve = 0
+
         while iters_no_improve < max_iters_no_improve:
             improved = False
-            for i in range(n_cand - 1):
-                # Try swapping adjacent pair
-                current_order[i], current_order[i+1] = current_order[i+1], current_order[i]
-                new_score = kemeny_score(current_order)
+            for i in range(m - 1):
+                a, b = order[i], order[i+1]
+
+                # delta = what happens if we swap a and b
+                # removing P[a,b], adding P[b,a]
+                delta = P[b, a] - P[a, b]
+                new_score = current_score + delta
 
                 if new_score < current_score:
+                    # swap permanently
+                    order[i], order[i+1] = b, a
                     current_score = new_score
                     improved = True
                     iters_no_improve = 0
                 else:
-                    # Revert swap
-                    current_order[i], current_order[i+1] = current_order[i+1], current_order[i]
                     iters_no_improve += 1
 
             if not improved:
@@ -289,9 +317,10 @@ def kemeny_local_search(ranks: np.ndarray,
 
         if current_score < best_score:
             best_score = current_score
-            best_order = current_order.copy()
+            best_order = order.copy()
 
     return best_score, best_order
+
 
 def random_ranking(ranks: np.ndarray):
     order = np.random.permutation(ranks.shape[1])
@@ -327,66 +356,155 @@ def schulze(ranks: np.ndarray) -> np.ndarray:
 
     return order
 
-def kemeny_parameterized_exact(ranks: np.ndarray) -> tuple[int, list]:
-    """
-    Exact Kemeny using DP over subsets – O(2^m * m^2 * n)
-    Theorem 4.6 (Betzler et al., 2009)
 
-    Input: ranks – (n_voters, m_candidates), lower = better
-    Output: (optimal_score, optimal_order_as_list best→worst)
+def compute_pairwise_cost(ranks: np.ndarray) -> np.ndarray:
     """
-    n, m = ranks.shape
-
-    # Precompute cost of placing a before b in final ranking
-    # cost[a,b] = number of voters who prefer b > a (penalty if a before b)
+    ranks: shape (n_voters, m_candidates), lower rank = better (0 is top)
+    cost[a, b] = #voters who prefer b over a
+                 = penalty we pay if we put a ABOVE b in the final ranking.
+    """
+    n_voters, m = ranks.shape
     cost = np.zeros((m, m), dtype=int)
     for a in range(m):
         for b in range(m):
-            if a != b:
-                cost[a,b] = np.sum(ranks[:,a] > ranks[:,b])
+            if a == b:
+                continue
+            # voter prefers b over a if rank[b] < rank[a]
+            cost[a, b] = np.sum(ranks[:, b] < ranks[:, a])
+    return cost
 
-    # All nonempty subsets
-    subsets = list(chain.from_iterable(combinations(range(m), k) for k in range(1, m+1)))
-    subset_id = {frozenset(s): i for i, s in enumerate(subsets)}
-    N = len(subsets)
 
-    # dp[S] = min Kemeny score for subset S
-    dp = [float('inf')] * N
-    # prev[S] = last candidate placed to achieve dp[S]
-    prev = [-1] * N
+def kemeny_dp_by_candidates(ranks: np.ndarray):
+    """
+    Exact Kemeny consensus using DP over subsets.
+    Parameter = number of candidates m.
+    Running time: O(2^m * m^2 * n).
 
-    # Base case: singletons
+    Input:
+        ranks[v, c] = position of candidate c in voter v's ranking
+                      (0 = best, higher = worse)
+
+    Output:
+        (opt_score, order)
+        opt_score: optimal Kemeny score (integer)
+        order: list of candidate indices from best to worst
+    """
+    n_voters, m = ranks.shape
+    if m == 0:
+        return 0, []
+    if m == 1:
+        return 0, [0]
+
+    cost = compute_pairwise_cost(ranks)
+
+    # dp[S] = minimum cost for ranking the subset S (bitmask) of candidates
+    # last[S] = candidate index that is placed LAST in the optimal ranking of S
+    size = 1 << m
+    dp = [inf] * size
+    last = [-1] * size
+
+    # base cases: singleton subsets
     for i in range(m):
-        S = frozenset([i])
-        dp[subset_id[S]] = 0
-        prev[subset_id[S]] = -1  # no previous
+        S = 1 << i
+        dp[S] = 0
+        last[S] = i
 
-    # Fill DP
-    for size in range(2, m+1):
-        for S in combinations(range(m), size):
-            S = frozenset(S)
-            sid = subset_id[S]
-            for last in S:                                      # try every possible last candidate
-                remaining = S - {last}
-                if not remaining:
-                    continue
-                rid = subset_id[remaining]
-                added_cost = sum(cost[last, x] for x in remaining)   # penalty: last before all previous
-                total = dp[rid] + added_cost
-                if total < dp[sid]:
-                    dp[sid] = total
-                    prev[sid] = last
+    # iterate over all subsets
+    for S in range(1, size):
+        # skip singletons (already initialised)
+        if S & (S - 1) == 0:
+            continue
 
-    # Reconstruct solution
-    full = frozenset(range(m))
-    best_score = dp[subset_id[full]]
+        # try each candidate i as the LAST element in S
+        # i must be in S
+        subset_candidates = [i for i in range(m) if (S & (1 << i))]
+        for i in subset_candidates:
+            prevS = S ^ (1 << i)   # S without i
 
-    order = []
-    current = full
-    while current:
-        last = prev[subset_id[current]]
-        order.append(last)                  # last can be -1 only for singletons → ignore later
-        current = current - {last}
+            # cost of best ranking for prevS
+            prev_cost = dp[prevS]
+            if prev_cost is inf:
+                continue
 
-    order = [x for x in reversed(order) if x != -1]   # reverse + drop the dummy -1
-    return int(best_score), order
+            # extra penalty from placing i at the bottom of S:
+            # everyone in prevS is above i, so for each c in prevS
+            # we pay cost[c, i] (penalty of c above i).
+            extra = 0
+            for c in range(m):
+                if prevS & (1 << c):
+                    extra += cost[c, i]
+
+            cur = prev_cost + extra
+            if cur < dp[S]:
+                dp[S] = cur
+                last[S] = i
+
+    full = (1 << m) - 1
+    opt_score = dp[full]
+    if opt_score is inf:
+        raise RuntimeError("DP failed to compute a finite Kemeny score")
+
+    # reconstruct ranking from last[] table
+    order_reversed = []
+    S = full
+    while S:
+        i = last[S]
+        order_reversed.append(i)
+        S ^= (1 << i)
+
+    # we built it from worst → best, so reverse
+    order = list(reversed(order_reversed))
+
+    return int(opt_score), order
+
+def compute_majority_matrix(ranks):
+    n_voters, m = ranks.shape
+    M = np.zeros((m, m), dtype=int)
+    for a in range(m):
+        for b in range(m):
+            if a != b:
+                # 1 if a beats b
+                M[a, b] = np.sum(ranks[:, a] < ranks[:, b])
+                M[a, b] = 1 if M[a, b] > (n_voters - M[a, b]) else 0
+    return M
+
+def kwiksort_aggregation(ranks):
+    """
+    KwikSort Kemeny approximation (Ailon-Charikar-Newman 2005).
+
+    Input:
+        ranks[v, c] = position of candidate c for voter v
+    Output:
+        list of candidates in consensus order (best → worst)
+    """
+    m = ranks.shape[1]
+    M = compute_majority_matrix(ranks)
+    candidates = list(range(m))
+    return kwiksort_rec(candidates, M)
+
+def kwiksort_rec(cands, M):
+    """Recursive KwikSort on subset of candidates.
+       cands: list of candidate indices
+       M[a,b]: majority tournament matrix (numpy array or list of lists)
+    """
+    if len(cands) <= 1:
+        return cands
+
+    # pick pivot at random
+    pivot = random.choice(cands)
+
+    left = []
+    right = []
+
+    # partition based on majority tournament
+    for c in cands:
+        if c == pivot:
+            continue
+        if M[c, pivot] == 1:   # c beats pivot → goes left
+            left.append(c)
+        else:                  # pivot beats c → goes right
+            right.append(c)
+
+    # recurse and concatenate
+    return kwiksort_rec(left, M) + [pivot] + kwiksort_rec(right, M)
+

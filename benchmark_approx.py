@@ -8,7 +8,7 @@ from algorithms import (
     kemeny_young_exact,
     borda,
     copeland,
-    quicksort_approx,
+    majority_sort,
     footrule_optimal,
     kendall_tau_distance,
     plackett_luce_mle,
@@ -19,7 +19,7 @@ from algorithms import (
 
 # ------------ Configuration -------------
 M_VOTERS = 2000             # fixed m
-N_SIZES = [4, 5, 6, 7, 8, 9, 10, 15, 20]  # vary number of candidates
+N_SIZES = [4, 5, 6, 7, 8, 9, 10, 15, 20, 25]  # vary number of candidates
 PHI = 0.95               # Mallows noise
 REPEATS_FAST = 3
 REPEATS_SLOW = 1
@@ -47,10 +47,10 @@ def main():
 
     # runtime storage
     rt_kem, rt_bor, rt_cop = [], [], []
-    rt_foot, rt_qs = [], []
+    rt_foot, rt_ms = [], []
 
     # approximation ratio storage
-    ar_bor, ar_cop, ar_foot, ar_qs = [], [], [], []
+    ar_bor, ar_cop, ar_foot, ar_ms = [], [], [], []
 
     rt_pl, rt_rp, rt_ls, rt_sch = [], [], [], []
 
@@ -59,9 +59,9 @@ def main():
 
     for n in N_SIZES:
         print(f"\n=== n = {n} candidates, m = {M_VOTERS} voters ===")
-        # ranks = generate_adversarial_bad_case(M_VOTERS, n)
-        path = "/home/sacrifice/kemeny-evaluation/python code/00004_netflix/00004-00000004.soc"   # adjust path if needed
-        ranks = load_soc_strict_orders(path)
+        ranks = generate_adversarial_bad_case(M_VOTERS, n)
+        # path = "/home/sacrifice/kemeny-evaluation/python code/00014_sushi/00014-00000001.soc"   # adjust path if needed
+        # ranks = load_soc_strict_orders(path)
 
         # ------ Kemeny exact ------
         t_kem = time_algorithm(kemeny_young_exact, ranks, repeats=REPEATS_SLOW)
@@ -95,13 +95,13 @@ def main():
         ar_foot.append(opt_score / foot_score)
         print(f"Footrule      : {t_f:.4f} s, ratio = {opt_score/foot_score:.3f}")
 
-        # ------ Quicksort ------
-        t_q = time_algorithm(quicksort_approx, ranks, repeats=REPEATS_FAST)
-        qs_order = quicksort_approx(ranks)
-        qs_score = kemeny_score(qs_order, ranks)
-        rt_qs.append(t_q)
-        ar_qs.append(opt_score / qs_score)
-        print(f"Quicksort     : {t_q:.4f} s, ratio = {opt_score/qs_score:.3f}")
+        # ------ MajoritySort ------
+        t_m = time_algorithm(majority_sort, ranks, repeats=REPEATS_FAST)
+        ms_order = majority_sort(ranks)
+        ms_score = kemeny_score(ms_order, ranks)
+        rt_ms.append(t_m)
+        ar_ms.append(opt_score / ms_score)
+        print(f"majority_bubble_sort     : {t_m:.4f} s, ratio = {opt_score/ms_score:.3f}")
 
         # # ------ Plackett–Luce ------
         # t_pl = time_algorithm(plackett_luce_mle, ranks, repeats=REPEATS_FAST)
@@ -145,7 +145,7 @@ def main():
         "borda": "#1f77b4",      # blue
         "copeland": "#ff7f0e",   # orange
         "footrule": "#2ca02c",   # green
-        "quicksort": "#d62728",  # red
+        "majority_sort": "#d62728",  # red
         "rp": "#9467bd",         # purple
         "schulze": "#8c564b",    # brown
         # "pl": "#e377c2",       # pink (if you re-enable it)
@@ -162,25 +162,25 @@ def main():
     plt.plot(N_SIZES, rt_bor,  marker="o", color=colors["borda"],    label="Borda")
     plt.plot(N_SIZES, rt_cop,  marker="o", color=colors["copeland"], label="Copeland")
     plt.plot(N_SIZES, rt_foot, marker="o", color=colors["footrule"], label="Footrule")
-    plt.plot(N_SIZES, rt_qs,   marker="o", color=colors["quicksort"],label="Quicksort")
+    plt.plot(N_SIZES, rt_ms,   marker="o", color=colors["majority_sort"],label="majority_sort")
     plt.plot(N_SIZES, rt_rp,   marker="o", color=colors["rp"],       label="Ranked Pairs")
     plt.plot(N_SIZES, rt_sch,  marker="o", color=colors["schulze"],  label="Schulze")
 
     plt.xlabel("Number of candidates (n)")
-    plt.yscale("log")
+    # plt.yscale("log")
     plt.ylabel("Runtime (log seconds)")
-    plt.title(f"Runtime vs n (m = {M_VOTERS}, Mallows φ={PHI})")
+    plt.title(f"Runtime vs n (m = {5000}, sushi dataset)")
     plt.grid(True)
     plt.legend()
 
     # ---------------- Approximation plot ----------------
     plt.subplot(1, 2, 2)
-    plt.plot(N_SIZES, ar_bor,  marker="o", color=colors["borda"],    label="Borda")
-    plt.plot(N_SIZES, ar_cop,  marker="o", color=colors["copeland"], label="Copeland")
-    plt.plot(N_SIZES, ar_foot, marker="o", color=colors["footrule"], label="Footrule")
-    plt.plot(N_SIZES, ar_qs,   marker="o", color=colors["quicksort"],label="Quicksort")
-    plt.plot(N_SIZES, ar_rp,   marker="o", color=colors["rp"],       label="Ranked Pairs")
-    plt.plot(N_SIZES, ar_sch,  marker="o", color=colors["schulze"],  label="Schulze")
+    plt.plot(N_SIZES, ar_bor,  marker="o", color=colors["borda"],        label="Borda")
+    plt.plot(N_SIZES, ar_cop,  marker="o", color=colors["copeland"],     label="Copeland")
+    plt.plot(N_SIZES, ar_foot, marker="o", color=colors["footrule"],     label="Footrule")
+    plt.plot(N_SIZES, ar_ms,   marker="o", color=colors["MajoritySort"], label="MajoritySort")
+    plt.plot(N_SIZES, ar_rp,   marker="o", color=colors["rp"],           label="Ranked Pairs")
+    plt.plot(N_SIZES, ar_sch,  marker="o", color=colors["schulze"],      label="Schulze")
 
     plt.xlabel("Number of candidates (n)")
     plt.ylabel("Approximation ratio (Kemeny / method)")
@@ -198,9 +198,9 @@ def main():
     # =====================================================
 
     algo_names = ["Kemeny", "Borda", "Copeland", "Footrule",
-                  "Quicksort", "Ranked Pairs", "Schulze"]
+                  "MajoritySort", "Ranked Pairs", "Schulze"]
     algo_orders = [kem_order, bor_order, cop_order,
-                   foot_order, qs_order, rp_order, sch_order]
+                   foot_order, ms_order, rp_order, sch_order]
 
     k = len(algo_orders)
     ktd_matrix = np.zeros((k, k), dtype=float)

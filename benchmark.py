@@ -8,7 +8,7 @@ from algorithms import (
     kemeny_young_exact,
     borda,
     copeland,
-    quicksort_approx,
+    majority_sort,
     footrule_optimal,
     # plackett_luce_mle,   # uncomment if you have choix installed
     ranked_pairs,
@@ -40,7 +40,7 @@ def main():
     times_kemeny = []
     times_borda = []
     times_copeland = []
-    times_quicksort = []
+    times_majoritysort = []
     times_footrule = []
     # times_pl = []
 
@@ -56,17 +56,17 @@ def main():
         t_borda = time_algorithm(borda, ranks_k, repeats=3)
         t_copeland = time_algorithm(copeland, ranks_k, repeats=3)
         t_foot = time_algorithm(footrule_optimal, ranks_k, repeats=3)
-        t_qs = time_algorithm(quicksort_approx, ranks_k, repeats=3)
+        t_majority = time_algorithm(majority_sort, ranks_k, repeats=3)
 
         times_borda.append(t_borda)
         times_copeland.append(t_copeland)
         times_footrule.append(t_foot)
-        times_quicksort.append(t_qs)
+        times_majoritysort.append(t_majority)
 
         print(f"Borda       : {t_borda:.6f} s")
         print(f"Copeland    : {t_copeland:.6f} s")
         print(f"Footrule    : {t_foot:.6f} s")
-        print(f"Quicksort   : {t_qs:.6f} s")
+        print(f"Quicksort   : {t_majority:.6f} s")
 
         # Kemeny ILP: only try up to some small k (e.g., 3–10)
         if k <= 9:
@@ -100,7 +100,7 @@ def main():
     plt.plot(candidate_sizes, times_borda, label="Borda")
     plt.plot(candidate_sizes, times_copeland, label="Copeland")
     plt.plot(candidate_sizes, times_footrule, label="Footrule")
-    plt.plot(candidate_sizes, times_quicksort, label="Quicksort heuristic")
+    plt.plot(candidate_sizes, times_majoritysort, label="Majority sort heuristic")
     plt.plot(candidate_sizes, times_kemeny, label="Kemeny ILP (exact)")
     plt.plot(candidate_sizes, times_ranked_pairs, label="Ranked Pairs")
     plt.plot(candidate_sizes, times_schulze, label="Schulze")
