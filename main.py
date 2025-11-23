@@ -11,11 +11,9 @@ from algorithms import (
     schulze,
     kemeny_dp_by_candidates,
     kwiksort_aggregation,
-    kemeny_bruteforce
+    kemeny_bruteforce,
+    random_ranking
 )
-from corankco.algorithms.kwiksort import KwikSortRandom
-from corankco.dataset import Dataset
-from corankco.ranking import Ranking
 
 # ------------------------------------------------
 # Helpers to normalize and pretty-print rankings
@@ -76,6 +74,7 @@ if __name__ == "__main__":
     kemeny_local_search_res  = kemeny_local_search(rankings)
     schulze_res = schulze(rankings)
     kwiksort_res = kwiksort_aggregation(rankings)
+    pick_a_perm_res = random_ranking(rankings)
     try:
         pl_true_order, pl_true_params = plackett_luce_mle(rankings)
         pl_true_order = list(pl_true_order)
@@ -93,8 +92,9 @@ if __name__ == "__main__":
         ("Footrule (optimal)",     list(footrule_res)),
         ("MajoritySort (heuristic)",  list(majority_sort_res)),
         ("Ranked pairs (heuristic)",  list(ranked_pairs_res)),
-        ("Local Search (heuristic)",  list(kemeny_local_search_res[1])),
+        ("Local Search (heuristic)",  list(kemeny_local_search_res)),
         ("schulze",  list(schulze_res)),
+        ("Pick-a-Perm",  list(pick_a_perm_res)),
     ]
 
     if pl_true_order is not None:

@@ -319,7 +319,7 @@ def kemeny_local_search(ranks, max_restarts=20, max_iters_no_improve=2000):
             best_score = current_score
             best_order = order.copy()
 
-    return best_score, best_order
+    return best_order
 
 
 def random_ranking(ranks: np.ndarray):

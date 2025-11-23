@@ -59,9 +59,9 @@ def main():
 
     for n in N_SIZES:
         print(f"\n=== n = {n} candidates, m = {M_VOTERS} voters ===")
-        ranks = generate_adversarial_bad_case(M_VOTERS, n)
-        # path = "/home/sacrifice/kemeny-evaluation/python code/00014_sushi/00014-00000001.soc"   # adjust path if needed
-        # ranks = load_soc_strict_orders(path)
+        # ranks = generate_adversarial_bad_case(M_VOTERS, n)
+        path = "/home/sacrifice/kemeny-evaluation/real datasets/00014_sushi/00014-00000001.soc"   # adjust path if needed
+        ranks = load_soc_strict_orders(path)
 
         # ------ Kemeny exact ------
         t_kem = time_algorithm(kemeny_young_exact, ranks, repeats=REPEATS_SLOW)

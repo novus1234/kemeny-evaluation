@@ -13,6 +13,7 @@ from algorithms import (
     kemeny_local_search,
     schulze,
     kwiksort_aggregation,
+    random_ranking,
     plackett_luce_mle,    # optional; comment out if choix not installed
 )
 
@@ -84,6 +85,7 @@ def main():
     times_schulze = []
     times_kwiksort = []
     times_pl = []   # optional
+    times_random = []
 
     # -------- BENCHMARK LOOP --------
     for k in candidate_sizes:
@@ -97,10 +99,11 @@ def main():
         tf = time_algorithm(footrule_optimal, ranks, repeats=3)
         tms = time_algorithm(majority_sort, ranks, repeats=3)
 
-        trp = time_algorithm(ranked_pairs, ranks, repeats=3)
+        trp = time_algorithm(ranked_pairs, ranks, repeats=1)
         tls = time_algorithm(kemeny_local_search, ranks, repeats=1)
-        tsch = time_algorithm(schulze, ranks, repeats=3)
+        tsch = time_algorithm(schulze, ranks, repeats=1)
         tkw = time_algorithm(kwiksort_aggregation, ranks, repeats=3)
+        trnd = time_algorithm(random_ranking, ranks, repeats=3)
 
         times_borda.append(tb)
         times_copeland.append(tc)
@@ -110,6 +113,7 @@ def main():
         times_local_search.append(tls)
         times_schulze.append(tsch)
         times_kwiksort.append(tkw)
+        times_random.append(trnd)
 
         print(f"Borda         : {tb:.6f} s")
         print(f"Copeland      : {tc:.6f} s")
@@ -119,15 +123,21 @@ def main():
         print(f"LocalSearch   : {tls:.6f} s")
         print(f"Schulze       : {tsch:.6f} s")
         print(f"KwikSort      : {tkw:.6f} s")
+        print(f"RandomRank   : {trnd:.6f} s")
+
 
         # Optional PL
-        try:
-            tpl = time_algorithm(plackett_luce_mle, ranks, repeats=1)
-            times_pl.append(tpl)
-            print(f"Plackett-Luce : {tpl:.6f} s")
-        except Exception:
+        if k <= 70:
+            try:
+                tpl = time_algorithm(plackett_luce_mle, ranks, repeats=1)
+                times_pl.append(tpl)
+                print(f"Plackett-Luce : {tpl:.6f} s")
+            except Exception:
+                times_pl.append(np.nan)
+                print("Plackett-Luce : FAILED")
+        else:
             times_pl.append(np.nan)
-            print("Plackett-Luce : FAILED")
+            print("Plackett-Luce : SKIPPED (k > 70)")
 
     # -------- PLOT RUNTIMES --------
     plt.figure(figsize=(10, 6))
@@ -140,9 +150,10 @@ def main():
     plt.plot(candidate_sizes, times_local_search, label="Local Search")
     plt.plot(candidate_sizes, times_schulze, label="Schulze")
     plt.plot(candidate_sizes, times_kwiksort, label="KwikSort")
+    plt.plot(candidate_sizes, times_random, label="Pick-a-Perm")
 
-    # if times_pl:
-    #     plt.plot(candidate_sizes, times_pl, label="Plackett-Luce MLE")
+    if times_pl:
+        plt.plot(candidate_sizes, times_pl, label="Plackett-Luce MLE")
 
     plt.xlabel("Number of Candidates (k)")
     plt.ylabel("Runtime (seconds, log scale)")
