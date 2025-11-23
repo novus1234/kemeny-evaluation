@@ -1,3 +1,0 @@
-/home/sacrifice/kemeny-evaluation/source/CMakeFiles/kconsens.dir
-/home/sacrifice/kemeny-evaluation/source/CMakeFiles/edit_cache.dir
-/home/sacrifice/kemeny-evaluation/source/CMakeFiles/rebuild_cache.dir
